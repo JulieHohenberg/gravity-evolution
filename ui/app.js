@@ -1,8 +1,8 @@
 const modelInfo = {
-  'genetic-earth': {name: 'Earth Genetic', detail: 'Genetic algorithm · Earth-trained', short: 'GE', color: '#4d8a6a'},
-  'genetic-moon': {name: 'Moon Genetic', detail: 'Genetic algorithm · Moon-trained', short: 'GM', color: '#7888b6'},
-  'ppo-earth': {name: 'Earth PPO', detail: 'Reinforcement learning · Earth-trained', short: 'PE', color: '#c78e69'},
-  'ppo-moon': {name: 'Moon PPO', detail: 'Reinforcement learning · Moon-trained', short: 'PM', color: '#a27ca5'},
+  'genetic-earth': {name: 'Earth Genetic', detail: 'Genetic algorithm · Earth-trained', color: '#4d8a6a'},
+  'genetic-moon': {name: 'Moon Genetic', detail: 'Genetic algorithm · Moon-trained', color: '#7888b6'},
+  'ppo-earth': {name: 'Earth PPO', detail: 'Reinforcement learning · Earth-trained', color: '#c78e69'},
+  'ppo-moon': {name: 'Moon PPO', detail: 'Reinforcement learning · Moon-trained', color: '#a27ca5'},
 };
 const modelsElement = document.querySelector('#models');
 const startButton = document.querySelector('#start');
@@ -42,12 +42,20 @@ async function loadModels() {
       const input = document.createElement('input');
       input.type = 'checkbox'; input.value = model.id; input.disabled = !model.available;
       input.checked = model.available && ['genetic-earth', 'ppo-earth'].includes(model.id);
-      const icon = document.createElement('span'); icon.className = 'model-icon'; icon.textContent = info.short;
+      const icon = document.createElement('span');
+      icon.className = `planet ${model.id.endsWith('-earth') ? 'earth' : 'moon'}`;
+      icon.setAttribute('aria-hidden', 'true');
+      const iconWrap = document.createElement('span'); iconWrap.className = 'racer-icon';
+      iconWrap.append(icon);
+      if (model.id.startsWith('ppo-')) {
+        const brain = document.createElement('span'); brain.className = 'brain-badge'; brain.textContent = '🧠';
+        brain.setAttribute('aria-hidden', 'true'); iconWrap.append(brain);
+      }
       const copy = document.createElement('span'); copy.className = 'model-name';
       copy.textContent = info.name;
       const detail = document.createElement('small'); detail.textContent = model.available ? info.detail : 'Saved model not found'; copy.append(detail);
       const kind = document.createElement('span'); kind.className = 'model-kind'; kind.textContent = model.id.startsWith('ppo') ? 'PPO' : 'GENETIC';
-      label.append(input, icon, copy, kind); modelsElement.append(label);
+      label.append(input, iconWrap, copy, kind); modelsElement.append(label);
       input.addEventListener('change', updateSelection);
     });
     updateSelection();
