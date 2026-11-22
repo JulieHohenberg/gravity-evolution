@@ -11,8 +11,10 @@ The genetic algorithm trains the neural network by trying different weights and 
 5. **Create the next generation:** Carry the best controller forward unchanged. For each of the other 29, randomly pick two parents and choose each weight from one parent or the other. Each weight then has a 10% chance of a small random change, called a mutation.
 6. **Repeat:** Test the new generation and repeat for 30 generations by default. Save the best controller's weights to a file.
 
-The [BipedalWalker simulation](https://github.com/Farama-Foundation/Gymnasium/blob/main/gymnasium/envs/box2d/bipedal_walker.py) rewards forward movement and penalizes tilting and motor use. The motor penalty encourages the robot to use less energy. Falling gives a reward of -100 for that step and ends the run.
+The [BipedalWalker simulation](https://github.com/Farama-Foundation/Gymnasium/blob/main/gymnasium/envs/box2d/bipedal_walker.py) rewards forward movement and penalizes tilting, motor use, and falling. We reduced the motor penalty and added a bonus for finishing quickly after robots stalled before the finish. The [physics simulation doc](physics-sim.md#rewards) explains the reward changes.
 
 Training uses the same terrain seed (`42`) for each controller. Run `python train_genetic.py` for Earth or add `--planet Moon` for the Moon. Use `--generations 10` to change the number of generations and `--overwrite` to replace saved weights.
 
 Each training run gets its own folder in `runs/`. It contains the best controller's weights from each generation (`generation-001.npy`, etc.), a `scores.csv` with each generation's best, average, worst, and overall best scores, and a `population-scores.csv` with every controller's score. `settings.json` records the training settings. To watch a generation, run `python simulation.py --controller` followed by its `.npy` file path.
+
+The original Earth and Moon models are also saved as `original-model.npy` in their respective run folders. Use `--overwrite` to replace the root controller file when training with the updated rewards; the original run folders stay available for comparison.

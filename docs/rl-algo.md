@@ -16,6 +16,38 @@ PPO teaches a controller through practice and feedback. The controller (a POLICY
 
 Unlike our genetic algorithm, which tests a population of different controllers and breeds the better ones, PPO improves a controller using feedback from its own practice. Think of this like one intelligent robot being born into the world and growing up and learning, rather than a controller being selected through the natural selection of many generations of naive robots. Both use the same sensor readings, motor commands, gravity settings, and simulation rewards, but their neural networks have different structures.
 
+After some robots stalled before the finish, we reduced the motor penalty and added a bonus for finishing quickly. Both PPO and the genetic algorithm use the same changes; see [physics simulation rewards](physics-sim.md#rewards).
+
+## Rewards and settings
+
+PPO learns from the rewards returned at each simulation step. The [BipedalWalker code](https://github.com/Farama-Foundation/Gymnasium/blob/main/gymnasium/envs/box2d/bipedal_walker.py) supplies the original rewards; our changes are in `WalkingRewards` in [simulation.py](../simulation.py).
+
+### BipedalWalker defaults
+
+The simulator first calculates a progress value using the robot's horizontal position and body tilt:
+
+```text
+progress = 130 × position / 30 − 5 × |tilt|
+step reward = change in progress − motor cost
+```
+
+Here, `30` is the simulator's default scale and `|tilt|` is the size of the body angle, regardless of direction. Moving forward increases progress, while leaning further decreases it. The step reward uses the **change** in progress since the previous step.
+
+The default motor cost is `0.028 × (|motor 1| + |motor 2| + |motor 3| + |motor 4|)`, with each motor's magnitude capped at 1. On a fall, the simulator sets that step's reward to **−100** and ends the run. Crossing the finish line ends the run but has no separate default bonus.
+
+### Our changes
+
+Some robots stopped moving and reached the time limit. We made these changes to encourage them to keep moving and reach the end:
+
+- **Lower motor cost:** We keep 25% of the default penalty. With the current motor settings, the new cost is `0.007 × (|motor 1| + |motor 2| + |motor 3| + |motor 4|)`, with each magnitude capped at 1.
+- **Finish and speed bonus:** If the robot crosses the finish line without falling, we add `100 + 0.1 × max(0, 1,600 − steps taken)` to that step's reward. Finishing in 1,000 steps adds **160** points; finishing in 1,500 adds **110**. Falling or timing out earns no finish bonus.
+
+The falling penalty stays at **−100**. These reward changes also apply to the genetic algorithm, so both methods train with the same rules.
+
+### PPO training settings
+
+We choose the planet and use seed `42`. By default, we train for **1,000,000 steps**, collect **2,048 steps** between PPO updates, and save and evaluate every **20,480 steps**. Stable-Baselines3 supplies PPO and its other settings, including a **0.0003 learning rate** and **0.2 clip range**. The learning rate controls the size of weight adjustments; clipping helps discourage overly large policy changes.
+
 ## Train and watch
 
 Run `python train_rl.py --planet Earth` or `python train_rl.py --planet Moon`. The default is one million simulation steps; use `--steps 20480` for a shorter run. PPO collects 2,048 steps at a time, so it rounds up to finish the current batch.

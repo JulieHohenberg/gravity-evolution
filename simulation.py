@@ -2,6 +2,7 @@
 
 import argparse
 
+import gymnasium as gym
 import numpy as np
 import pygame
 from carl.envs.gymnasium.box2d.carl_bipedal_walker import CARLBipedalWalker
@@ -10,12 +11,42 @@ from controller import WEIGHT_COUNT, motor_commands
 # Gravity is measured in meters per second squared. Negative means downward.
 GRAVITY = {"Earth": -9.81, "Moon": -1.62}
 SEED = 42  # Reusing a seed gives both environments the same generated terrain.
+MOTOR_PENALTY_SCALE = 0.25  # Keep 25% of the simulator's motor penalty.
+FINISH_BONUS = 100  # Points for reaching the finish line.
+SPEED_BONUS = 0.1  # Extra points for each unused step out of 1,600.
+RACE_STEPS = 1600
+
+
+class WalkingRewards(gym.Wrapper):
+    """Adjust rewards equally for genetic and PPO training."""
+
+    def reset(self, **kwargs):
+        """Start counting steps for a new run."""
+        self.steps = 0
+        return self.env.reset(**kwargs)
+
+    def step(self, action):
+        """Reduce the motor penalty and reward reaching the finish quickly."""
+        observation, reward, terminated, truncated, info = self.env.step(action)
+        self.steps += 1
+        walker = self.env.unwrapped
+        failed = walker.game_over or walker.hull.position.x < 0
+        if not failed:
+            # The simulator replaces the whole reward with -100 on a fall.
+            original_cost = 0.00035 * self.env.context["MOTORS_TORQUE"] * np.clip(np.abs(action), 0, 1).sum()
+            reward += (1 - MOTOR_PENALTY_SCALE) * original_cost
+            finish_x = (self.env.context["TERRAIN_LENGTH"] - self.env.context["TERRAIN_GRASS"]) * self.env.context["TERRAIN_STEP"]
+            if terminated and walker.hull.position.x > finish_x:
+                reward += FINISH_BONUS + SPEED_BONUS * max(0, RACE_STEPS - self.steps)
+        return observation, float(reward), terminated, truncated, info
 
 
 def make_environment(planet):
-    # A context tells CARL which properties to change from its defaults.
-    # Each environment has its own context, so gravity stays fixed during a run.
-    return CARLBipedalWalker(contexts={0: {"GRAVITY_Y": GRAVITY[planet]}})
+    """Create a walker with the chosen gravity and shared reward rules."""
+    # Keep all settings available when CARL selects the context again on reset.
+    context = CARLBipedalWalker.get_default_context()
+    context["GRAVITY_Y"] = GRAVITY[planet]
+    return WalkingRewards(CARLBipedalWalker(contexts={0: context}))
 
 
 def main():

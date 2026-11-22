@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 
 from controller import WEIGHT_COUNT, motor_commands
-from simulation import GRAVITY, SEED, make_environment
+from simulation import FINISH_BONUS, GRAVITY, MOTOR_PENALTY_SCALE, RACE_STEPS, SEED, SPEED_BONUS, make_environment
 
 POPULATION = 30  # Number of controllers tested per generation.
 GENERATIONS = 30  # Number of generations (rounds of testing and breeding).
@@ -40,10 +40,12 @@ def train(planet, generations):
     Path("runs").mkdir(exist_ok=True)
     run_dir = Path(tempfile.mkdtemp(prefix=f"genetic-{planet.lower()}-", dir="runs"))
     (run_dir / "settings.json").write_text(json.dumps({
-        "algorithm": "genetic", "planet": planet, "gravity": GRAVITY[planet],
+        "algorithm": "genetic", "reward_version": "finish-and-speed-v1", "planet": planet, "gravity": GRAVITY[planet],
         "seed": SEED, "generations": generations, "population": POPULATION,
         "survivors": SURVIVORS, "max_steps": MAX_STEPS,
         "mutation_probability": 0.1, "mutation_std": 0.1,
+        "motor_penalty_scale": MOTOR_PENALTY_SCALE, "finish_bonus": FINISH_BONUS,
+        "speed_bonus_per_step": SPEED_BONUS, "bonus_step_limit": RACE_STEPS,
     }, indent=2) + "\n")
     print(f"saving generation results to {run_dir}", flush=True)
     rng = np.random.default_rng(SEED)

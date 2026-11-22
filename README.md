@@ -45,7 +45,11 @@ See [the neural network](docs/neural-net-controller.md), [genetic algorithm](doc
 
 ## Race API
 
-Run `python -m uvicorn app:app` and open `http://127.0.0.1:8000/docs` to test races. See [api.md](docs/api.md) for the model choices and request format.
+Run `python -m uvicorn app:app` and open `http://127.0.0.1:8000` to use the race interface. Open `http://127.0.0.1:8000/docs` to test the API. See [api.md](docs/api.md) for the model choices and request format.
+
+## UI collaborator
+
+The UI was polished in collaboration OpenAI's GPT-6.1 Terra and the [oil-ui skill](https://github.com/oil-oil/oil-ui/blob/main/SKILL.md).
 
 ## Python files
 
@@ -54,6 +58,7 @@ Run `python -m uvicorn app:app` and open `http://127.0.0.1:8000/docs` to test ra
 - [train_genetic.py](train_genetic.py) trains the controller with a genetic algorithm.
 - [train_rl.py](train_rl.py) trains a controller with PPO.
 - [app.py](app.py) provides the race API.
+- [ui/](ui/) contains the race interface.
 - [tests/test_controller.py](tests/test_controller.py) checks the motor commands and fitness scoring.
 - [tests/test_rl.py](tests/test_rl.py) checks PPO training and its saved files.
 - [tests/test_api.py](tests/test_api.py) checks race requests and results.

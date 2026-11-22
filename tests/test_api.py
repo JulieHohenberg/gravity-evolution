@@ -11,6 +11,27 @@ from controller import WEIGHT_COUNT
 
 
 class RaceAPITest(unittest.TestCase):
+    def test_first_finisher_wins_even_if_another_goes_further(self):
+        """Choose the first finisher, not the greatest final distance."""
+        results = [
+            {"model": "genetic-earth", "status": "finished", "steps": 900, "distance": 84.1},
+            {"model": "ppo-earth", "status": "finished", "steps": 1100, "distance": 84.3},
+        ]
+        with patch.object(app, "model_path", return_value=Path("model")), patch.object(app, "run_controller", side_effect=results):
+            response = TestClient(app.app).post("/race", json={"planet": "Earth", "models": ["genetic-earth", "ppo-earth"]})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["winners"], ["genetic-earth"])
+
+    def test_furthest_wins_when_no_one_finishes(self):
+        """Compare distances if all racers fall or run out of time."""
+        results = [
+            {"model": "genetic-earth", "status": "fell", "steps": 50, "distance": 4.0},
+            {"model": "ppo-earth", "status": "time_limit", "steps": 1600, "distance": 8.0},
+        ]
+        with patch.object(app, "model_path", return_value=Path("model")), patch.object(app, "run_controller", side_effect=results):
+            response = TestClient(app.app).post("/race", json={"planet": "Earth", "models": ["genetic-earth", "ppo-earth"]})
+        self.assertEqual(response.json()["winners"], ["ppo-earth"])
+
     def test_request_validation_and_missing_model(self):
         """Reject invalid choices and report models that aren't installed."""
         with tempfile.TemporaryDirectory() as directory, patch.object(app, "ROOT", Path(directory)):
@@ -35,6 +56,10 @@ class RaceAPITest(unittest.TestCase):
                 self.assertEqual(racer["frames"][0]["step"], 0)
                 self.assertEqual(racer["frames"][-1]["step"], racer["steps"])
                 self.assertEqual(len(racer["frames"][0]["body"]), 5)
+                self.assertEqual(len(racer["frames"][0]["joint_angles"]), 4)
+                self.assertGreaterEqual(racer["frames"][0]["speed_mps"], 0)
+                self.assertIsNone(racer["frames"][0]["motor_commands"])
+                self.assertEqual(len(racer["frames"][-1]["motor_commands"]), 4)
                 self.assertTrue(racer["terrain"])
 
 

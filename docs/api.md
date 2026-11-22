@@ -21,6 +21,8 @@ Open `http://127.0.0.1:8000/docs` to try the endpoints. `GET /models` lists the 
 }
 ```
 
-The other model IDs are `genetic-moon` and `ppo-earth`. The training planet in the model name can be different from the race planet. Each controller runs on the same seeded course for up to 1,600 steps. The response includes distance, total reward, finish status, and the winner by greatest forward distance. It also includes terrain and robot body positions at regular steps so a website can replay the race. Races are simulated before the response is sent.
+The other model IDs are `genetic-moon` and `ppo-earth`. The training planet in the model name can be different from the race planet. Each controller runs on the same seeded course for up to 1,600 steps. The first to finish wins; if nobody finishes, the furthest robot wins. The response includes each controller's full run, distance, total reward, finish status, and replay positions. Races are simulated before the response is sent.
+
+Each replay frame also includes horizontal speed in meters per second, four joint angles in radians, and four motor commands, in this order: first hip, first knee, second hip, second knee. The initial frame has no motor commands because the controller hasn't acted yet.
 
 The trained model files are kept locally and ignored by Git. To run the API on another computer or host, the selected model files must also be available there.

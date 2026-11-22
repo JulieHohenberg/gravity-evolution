@@ -12,6 +12,8 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, model_validator
 from stable_baselines3 import PPO
 
@@ -24,6 +26,7 @@ FRAME_INTERVAL = 10  # Record positions every 10 simulation steps.
 race_lock = Lock()  # CARL changes shared physics settings while creating worlds.
 
 app = FastAPI(title="Gravity Evolution API")
+app.mount("/static", StaticFiles(directory=ROOT / "ui"), name="static")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,6 +35,12 @@ app.add_middleware(
 )
 
 ModelId = Literal["genetic-earth", "genetic-moon", "ppo-earth", "ppo-moon"]
+
+
+@app.get("/", include_in_schema=False)
+def home():
+    """Show the race control screen."""
+    return FileResponse(ROOT / "ui" / "index.html")
 
 
 class RaceInput(BaseModel):
@@ -68,12 +77,15 @@ def load_controller(model_id, path):
     return weights
 
 
-def snapshot(walker, step, start_x):
-    """Save the body outlines and distance for replaying this step."""
+def snapshot(walker, step, start_x, action=None):
+    """Save the body, joint angles, and motor commands for this step."""
     bodies = [walker.hull, *walker.legs]
     return {
         "step": step,
         "distance": round(float(walker.hull.position.x - start_x), 4),
+        "speed_mps": round(abs(float(walker.hull.linearVelocity.x)), 4),
+        "joint_angles": [round(float(joint.angle), 4) for joint in walker.joints],
+        "motor_commands": [round(float(value), 4) for value in action] if action is not None else None,
         "body": [
             [[round(float(point[0]), 4), round(float(point[1]), 4)]
              for point in (body.transform * vertex for vertex in body.fixtures[0].shape.vertices)]
@@ -88,7 +100,7 @@ def run_controller(planet, model_id, path):
     environment = make_environment(planet)
     try:
         observation, _ = environment.reset(seed=SEED)
-        walker = environment.env.unwrapped
+        walker = environment.unwrapped
         start_x = float(walker.hull.position.x)
         terrain = [[round(float(point[0]), 4), round(float(point[1]), 4)]
                    for polygon, _ in walker.terrain_poly for point in polygon[:1]]
@@ -105,7 +117,7 @@ def run_controller(planet, model_id, path):
             observation, reward, terminated, truncated, _ = environment.step(action)
             reward_total += float(reward)
             if step % FRAME_INTERVAL == 0 or terminated or truncated or step == MAX_STEPS:
-                frames.append(snapshot(walker, step, start_x))
+                frames.append(snapshot(walker, step, start_x, action))
             if terminated or truncated:
                 if terminated:
                     status = "fell" if walker.game_over or walker.hull.position.x < 0 else "finished"
@@ -149,8 +161,14 @@ def race(input: RaceInput):
         racers = [run_controller(input.planet, model_id, paths[model_id]) for model_id in input.models]
     finally:
         race_lock.release()
-    furthest = max(racer["distance"] for racer in racers)
+    finishers = [racer for racer in racers if racer["status"] == "finished"]
+    if finishers:
+        first_step = min(racer["steps"] for racer in finishers)
+        winners = [racer["model"] for racer in finishers if racer["steps"] == first_step]
+    else:
+        furthest = max(racer["distance"] for racer in racers)
+        winners = [racer["model"] for racer in racers if racer["distance"] == furthest]
     return {"planet": input.planet, "gravity": GRAVITY[input.planet], "seed": SEED,
             "steps_per_second": 50, "frame_interval": FRAME_INTERVAL,
-            "winners": [racer["model"] for racer in racers if racer["distance"] == furthest],
+            "winners": winners,
             "racers": racers}

@@ -10,7 +10,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.monitor import Monitor
 
-from simulation import GRAVITY, SEED, make_environment
+from simulation import FINISH_BONUS, GRAVITY, MOTOR_PENALTY_SCALE, RACE_STEPS, SEED, SPEED_BONUS, make_environment
 
 TOTAL_STEPS = 1_000_000  # TOTAL number of simulation steps used for training (amount of practice steps robot gets while PPO repeatedly updates its controller).
 ROLLOUT_STEPS = 2048  # Steps collected before each PPO update.
@@ -39,9 +39,11 @@ def train(planet, steps):
     Path("runs").mkdir(exist_ok=True)
     run_dir = Path(tempfile.mkdtemp(prefix=f"ppo-{planet.lower()}-", dir="runs"))
     (run_dir / "settings.json").write_text(json.dumps({
-        "algorithm": "ppo", "planet": planet, "gravity": GRAVITY[planet],
+        "algorithm": "ppo", "reward_version": "finish-and-speed-v1", "planet": planet, "gravity": GRAVITY[planet],
         "seed": SEED, "requested_steps": steps, "rollout_steps": ROLLOUT_STEPS,
         "checkpoint_interval": SAVE_EVERY,
+        "motor_penalty_scale": MOTOR_PENALTY_SCALE, "finish_bonus": FINISH_BONUS,
+        "speed_bonus_per_step": SPEED_BONUS, "bonus_step_limit": RACE_STEPS,
     }, indent=2) + "\n")
     print(f"saving PPO results to {run_dir}", flush=True)
     environment = Monitor(WalkerObservations(make_environment(planet)), str(run_dir / "training"))
