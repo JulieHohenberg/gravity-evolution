@@ -1,6 +1,6 @@
 # Neural network controller
 
-The controller is a small neural network. It takes 24 sensor readings, such as the robot's tilt, leg positions, and ground distances. A layer of 16 neurons processes those readings, and four outputs control the robot's motors.
+The genetic controller is a small neural network. It takes 24 sensor readings, such as the robot's tilt, leg positions, and ground distances. A layer of 16 neurons processes those readings, and four outputs control the robot's motors. PPO uses its own neural network with the same inputs and outputs.
 
 [controller.py](../controller.py) defines the network and calculates its motor commands.
 

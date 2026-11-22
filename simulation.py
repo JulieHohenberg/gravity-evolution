@@ -19,12 +19,19 @@ def make_environment(planet):
 
 
 def main():
+    """Display the robot with an optional trained controller."""
     parser = argparse.ArgumentParser(description="Watch the walking robot.")
-    parser.add_argument("--controller", help="path to trained controller weights")
+    controllers = parser.add_mutually_exclusive_group()
+    controllers.add_argument("--controller", help="path to genetic controller weights")
+    controllers.add_argument("--ppo", help="path to a trained PPO model")
     args = parser.parse_args()
     weights = np.load(args.controller, allow_pickle=False) if args.controller else None
     if weights is not None and weights.shape != (WEIGHT_COUNT,):
         parser.error(f"controller must contain {WEIGHT_COUNT} weights")
+    model = None
+    if args.ppo:
+        from stable_baselines3 import PPO
+        model = PPO.load(args.ppo, device="cpu")
 
     pygame.init()
     screen = pygame.display.set_mode((600, 540))
@@ -62,7 +69,10 @@ def main():
 
         # One step advances the Box2D physics by 1/50 of a simulated second.
         if not paused and not finished:
-            action = motor_commands(observation, weights) if weights is not None else np.zeros(4, dtype=np.float32)
+            if model is not None:
+                action, _ = model.predict(observation["obs"], deterministic=True)
+            else:
+                action = motor_commands(observation, weights) if weights is not None else np.zeros(4, dtype=np.float32)
             observation, _, terminated, truncated, _ = environment.step(action)
             finished = terminated or truncated
 
@@ -84,7 +94,7 @@ def main():
         lines = [
             f"{planet}   |   Gravity: {abs(GRAVITY[planet])} m/s² downward",
             "1: Earth    2: Moon    R: reset    Space: pause",
-            ("Controller active" if weights is not None else "Motors off") + ("   |   Paused" if paused else ""),
+            ("Controller active" if weights is not None or model is not None else "Motors off") + ("   |   Paused" if paused else ""),
             "Run ended — press R to restart" if finished else "Esc: quit",
         ]
         for index, line in enumerate(lines):

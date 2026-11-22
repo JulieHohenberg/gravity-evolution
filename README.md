@@ -39,6 +39,8 @@ python simulation.py --controller controller-earth.npy
 
 Use `python train_genetic.py --planet Moon` to train under Moon gravity. You can load either controller in the viewer and switch between planets.
 
+To train with PPO instead, run `python train_rl.py --planet Earth` or `python train_rl.py --planet Moon`. The command prints the folder containing the saved model. Watch it with `python simulation.py --ppo runs/<run-folder>/final-model.zip`.
+
 See [the neural network](docs/neural-net-controller.md), [genetic algorithm](docs/genetic-algo.md), and [reinforcement learning](docs/rl-algo.md) for details.
 
 ## Python files
@@ -46,4 +48,6 @@ See [the neural network](docs/neural-net-controller.md), [genetic algorithm](doc
 - [simulation.py](simulation.py) sets up Earth and Moon gravity and displays the robot.
 - [controller.py](controller.py) turns the robot's sensor readings into motor commands using a neural network (puts neural net into INFERENCE MODE).
 - [train_genetic.py](train_genetic.py) trains the controller with a genetic algorithm.
+- [train_rl.py](train_rl.py) trains a controller with PPO.
 - [tests/test_controller.py](tests/test_controller.py) checks the motor commands and fitness scoring.
+- [tests/test_rl.py](tests/test_rl.py) checks PPO training and its saved files.

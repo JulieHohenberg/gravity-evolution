@@ -2,3 +2,5 @@
 carl-bench[box2d]==1.1.1
 # Gym's Box2D environment expects the NumPy 1.x API.
 numpy<2
+# PPO training and its neural network.
+stable-baselines3==2.4.1
