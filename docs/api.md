@@ -17,11 +17,14 @@ Open `http://127.0.0.1:8000/docs` to try the endpoints. `GET /models` lists the 
 ```json
 {
   "planet": "Earth",
-  "models": ["genetic-earth", "ppo-moon"]
+  "models": ["genetic-earth", "ppo-moon"],
+  "seed": 42
 }
 ```
 
 The other model IDs are `genetic-moon` and `ppo-earth`. The training planet in the model name can be different from the race planet. Each controller runs on the same seeded course for up to 1,600 steps. The first to finish wins; if nobody finishes, the furthest robot wins. The response includes each controller's full run, distance, total reward, finish status, and replay positions. Races are simulated before the response is sent.
+
+The optional `seed` is a whole number from 0 to 4,294,967,295 and defaults to 42. It changes the generated course and the robot's starting push. Every racer in a request uses the same seed; the saved model weights don't change. Training uses seed 42.
 
 Each replay frame also includes horizontal speed in meters per second, four joint angles in radians, and four motor commands, in this order: first hip, first knee, second hip, second knee. The initial frame has no motor commands because the controller hasn't acted yet.
 

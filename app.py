@@ -48,6 +48,7 @@ class RaceInput(BaseModel):
 
     planet: Literal["Earth", "Moon"]
     models: list[ModelId] = Field(min_length=1, max_length=4)
+    seed: int = Field(default=SEED, ge=0, le=4294967295, strict=True)
 
     @model_validator(mode="after")
     def unique_models(self):
@@ -94,12 +95,12 @@ def snapshot(walker, step, start_x, action=None):
     }
 
 
-def run_controller(planet, model_id, path):
+def run_controller(planet, model_id, path, seed):
     """Run one controller on the same seeded course and record its movement."""
     controller = load_controller(model_id, path)
     environment = make_environment(planet)
     try:
-        observation, _ = environment.reset(seed=SEED)
+        observation, _ = environment.reset(seed=seed)
         walker = environment.unwrapped
         start_x = float(walker.hull.position.x)
         terrain = [[round(float(point[0]), 4), round(float(point[1]), 4)]
@@ -158,7 +159,7 @@ def race(input: RaceInput):
     if not race_lock.acquire(blocking=False):
         raise HTTPException(status_code=409, detail="A race is already running. Try again shortly.")
     try:
-        racers = [run_controller(input.planet, model_id, paths[model_id]) for model_id in input.models]
+        racers = [run_controller(input.planet, model_id, paths[model_id], input.seed) for model_id in input.models]
     finally:
         race_lock.release()
     finishers = [racer for racer in racers if racer["status"] == "finished"]
@@ -168,7 +169,7 @@ def race(input: RaceInput):
     else:
         furthest = max(racer["distance"] for racer in racers)
         winners = [racer["model"] for racer in racers if racer["distance"] == furthest]
-    return {"planet": input.planet, "gravity": GRAVITY[input.planet], "seed": SEED,
+    return {"planet": input.planet, "gravity": GRAVITY[input.planet], "seed": input.seed,
             "steps_per_second": 50, "frame_interval": FRAME_INTERVAL,
             "winners": winners,
             "racers": racers}

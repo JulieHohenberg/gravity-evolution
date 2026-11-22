@@ -10,6 +10,8 @@ const track = document.querySelector('#track');
 const message = document.querySelector('#message');
 const statusText = document.querySelector('#race-status');
 const timer = document.querySelector('#timer');
+const seedInput = document.querySelector('#seed');
+const randomSeedButton = document.querySelector('#random-seed');
 let planet = 'Earth';
 let animation;
 let busy = false;
@@ -18,8 +20,11 @@ let busy = false;
 function updateSelection() {
   const selected = [...modelsElement.querySelectorAll('input:checked')];
   modelsElement.querySelectorAll('.model').forEach(label => label.classList.toggle('selected', label.querySelector('input').checked));
-  startButton.disabled = busy || selected.length === 0;
-  document.querySelector('#setup-note').textContent = selected.length ? '' : 'Choose at least one racer to begin.';
+  seedInput.disabled = busy;
+  randomSeedButton.disabled = busy;
+  const seedValid = seedInput.disabled || seedInput.checkValidity();
+  startButton.disabled = busy || selected.length === 0 || !seedValid;
+  document.querySelector('#setup-note').textContent = !selected.length ? 'Choose at least one racer to begin.' : !seedValid ? 'Enter a whole seed from 0 to 4294967295.' : '';
 }
 
 // Load the available trained models from the API.
@@ -81,7 +86,7 @@ function drawFrame(canvas, racer, frame, world, color) {
 
 // Play all recorded racers against the same simulation clock.
 function playRace(data) {
-  document.querySelector('#track-world').textContent = data.planet.toUpperCase();
+  document.querySelector('#race-world').textContent = `${data.planet.toUpperCase()} GRAVITY`;
   track.className = `track racing${data.planet === 'Moon' ? ' moon-track' : ''}`;
   track.replaceChildren(); track.style.setProperty('--lanes', data.racers.length);
   const lanes = data.racers.map(racer => {
@@ -136,7 +141,7 @@ async function startRace() {
   cancelAnimationFrame(animation); busy = true; updateSelection(); message.hidden = true;
   startButton.firstChild.textContent = 'PREPARING RACE '; statusText.textContent = 'Preparing the track';
   try {
-    const response = await fetch('/race', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({planet, models:selected})});
+    const response = await fetch('/race', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({planet, models:selected, seed:Number(seedInput.value)})});
     const data = await response.json();
     if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Could not start the race.');
     playRace(data);
@@ -151,7 +156,19 @@ document.querySelectorAll('.world').forEach(button => button.addEventListener('c
   planet = button.dataset.planet;
   document.body.classList.toggle('moon-mode', planet === 'Moon');
   document.querySelectorAll('.world').forEach(item => { const selected = item === button; item.classList.toggle('active', selected); item.setAttribute('aria-pressed', String(selected)); });
-  if (!track.classList.contains('racing')) document.querySelector('#track-world').textContent = planet.toUpperCase();
+  document.querySelector('#race-world').textContent = `${planet.toUpperCase()} GRAVITY`;
+  track.className = 'track empty';
+  const grid = document.createElement('div'); grid.className = 'track-grid'; grid.setAttribute('aria-hidden', 'true');
+  track.replaceChildren(grid);
+  statusText.textContent = 'Ready to start';
+  timer.innerHTML = '00.0 <small>SEC</small>';
 }));
+seedInput.addEventListener('input', updateSelection);
+randomSeedButton.addEventListener('click', () => {
+  let nextSeed;
+  do { nextSeed = Math.floor(Math.random() * 4294967296); } while (String(nextSeed) === seedInput.value);
+  seedInput.value = String(nextSeed);
+  updateSelection();
+});
 startButton.addEventListener('click', startRace);
 loadModels();
