@@ -1,6 +1,6 @@
 # gravity-evolution
 
-Machine Learning and AI (MESA8414) final project. This first step shows the same walking robot in Earth and Moon gravity using [CARL](https://github.com/automl/CARL) and its Box2D physics environment.
+This first step shows the same walking robot in Earth and Moon gravity using [CARL](https://github.com/automl/CARL) and its Box2D physics environment.
 
 Earth gravity is 9.81 m/s² and Moon gravity is 1.62 m/s²
 
