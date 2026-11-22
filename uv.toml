@@ -1,0 +1,6 @@
+# Box2D needs SWIG inside its isolated build environment.
+extra-build-dependencies = { box2d-py = ["swig"] }
+extra-index-url = ["https://download.pytorch.org/whl/cpu"]
+
+[pip]
+extra-build-dependencies = { box2d-py = ["swig"] }

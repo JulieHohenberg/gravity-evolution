@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import shutil
 from pathlib import Path
 from unittest.mock import patch
 
@@ -11,6 +12,19 @@ from controller import WEIGHT_COUNT
 
 
 class RaceAPITest(unittest.TestCase):
+    def test_bundled_models_work_without_local_training_files(self):
+        """Run all four bundled models when local training files aren't present."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            shutil.copytree(Path(app.__file__).parent / "models", root / "models")
+            with patch.object(app, "ROOT", root), patch.object(app, "MAX_STEPS", 2):
+                client = TestClient(app.app)
+                models = client.get("/models").json()["models"]
+                self.assertTrue(all(model["available"] for model in models))
+                response = client.post("/race", json={"planet": "Moon", "models": [model["id"] for model in models]})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(len(response.json()["racers"]), 4)
+
     def test_seed_is_shared_by_all_racers(self):
         """Send the chosen seed to each racer and return it in the result."""
         results = [

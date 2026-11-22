@@ -59,13 +59,18 @@ class RaceInput(BaseModel):
 
 
 def model_path(model_id):
-    """Find the genetic weights or the newest completed PPO model."""
+    """Use locally trained models when present, or the bundled models."""
     algorithm, planet = model_id.split("-")
     if algorithm == "genetic":
         path = ROOT / f"controller-{planet}.npy"
-        return path if path.is_file() else None
-    paths = list((ROOT / "runs").glob(f"ppo-{planet}-*/final-model.zip"))
-    return max(paths, key=lambda path: (path.stat().st_mtime_ns, str(path))) if paths else None
+        if path.is_file():
+            return path
+    else:
+        paths = list((ROOT / "runs").glob(f"ppo-{planet}-*/final-model.zip"))
+        if paths:
+            return max(paths, key=lambda path: (path.stat().st_mtime_ns, str(path)))
+    bundled = ROOT / "models" / f"{model_id}{'.npy' if algorithm == 'genetic' else '.zip'}"
+    return bundled if bundled.is_file() else None
 
 
 def load_controller(model_id, path):

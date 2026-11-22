@@ -10,7 +10,7 @@ python -m pip install -r requirements.txt
 python -m uvicorn app:app --host 127.0.0.1 --port 8000
 ```
 
-Open `http://127.0.0.1:8000/docs` to try the endpoints. `GET /models` lists the four controllers and shows which saved files are available. Genetic controllers come from `controller-earth.npy` and `controller-moon.npy`; PPO controllers use the most recently saved `final-model.zip` for each planet in `runs/`.
+Open `http://127.0.0.1:8000/docs` to try the endpoints. `GET /models` lists the four controllers and shows which saved files are available. The app uses locally trained controllers when available: `controller-earth.npy` and `controller-moon.npy` for genetic models, and the latest `final-model.zip` in `runs/` for PPO. Otherwise, it uses the copies in `models/`.
 
 `POST /race` accepts a planet and one to four different models. For example, this races an Earth-trained genetic controller against a Moon-trained PPO controller on Earth:
 
@@ -28,4 +28,4 @@ The optional `seed` is a whole number from 0 to 4,294,967,295 and defaults to 42
 
 Each replay frame also includes horizontal speed in meters per second, four joint angles in radians, and four motor commands, in this order: first hip, first knee, second hip, second knee. The initial frame has no motor commands because the controller hasn't acted yet.
 
-The trained model files are kept locally and ignored by Git. To run the API on another computer or host, the selected model files must also be available there.
+Training results in `runs/` and root-level controller files are kept locally. The `models/` folder contains selected copies for deployment.

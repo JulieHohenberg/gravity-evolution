@@ -51,6 +51,17 @@ Run `python -m uvicorn app:app` and open `http://127.0.0.1:8000` to use the race
 
 The UI was polished in collaboration OpenAI's GPT-6.1 Terra and the [oil-ui skill](https://github.com/oil-oil/oil-ui/blob/main/SKILL.md).
 
+## Deploy on Vercel
+
+Connect the repository to Vercel and deploy it as a FastAPI app. Vercel uses Python 3.12 by default. The website and race API are served by `app.py`.
+
+- [requirements.txt](requirements.txt) lists the Python packages. Linux uses CPU-only PyTorch because races don't need GPU libraries.
+- [uv.toml](uv.toml) makes SWIG available when Vercel builds Box2D and points the installer to the CPU PyTorch packages.
+- [vercel.json](vercel.json) allows a race request up to 60 seconds.
+- [models/](models/) contains copies of the four trained controllers so a deployment can run races. The app uses local training results when present and these copies otherwise. Replace the copies to deploy newly trained models; their contents are included in the repository.
+
+Vercel's [Large Functions beta](https://vercel.com/changelog/vercel-functions-can-now-be-up-to-5-gb-in-package-size) may be needed if the installed packages exceed the standard size limit.
+
 ## Python files
 
 - [simulation.py](simulation.py) sets up Earth and Moon gravity and displays the robot.

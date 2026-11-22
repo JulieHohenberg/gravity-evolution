@@ -4,6 +4,9 @@ carl-bench[box2d]==1.1.1
 numpy<2
 # PPO training and its neural network.
 stable-baselines3==2.4.1
+# Use the CPU build on Linux instead of downloading GPU libraries.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.8.0+cpu; sys_platform == "linux" and platform_machine == "x86_64"
 # API server and its HTTP test client.
 fastapi==0.115.14
 uvicorn==0.34.3
