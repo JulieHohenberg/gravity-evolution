@@ -1,0 +1,6 @@
+# Physics simulation
+
+We use [CARL](https://github.com/automl/CARL)'s BipedalWalker: a two-legged robot in a 2D world. It uses [Box2D](https://github.com/erincatto/box2d) to handle gravity, movement, and collisions.
+
+We set CARL's `GRAVITY_Y` parameter to **-9.81 m/s²** for Earth and **-1.62 m/s²** for the Moon. The minus sign means gravity pulls down. Both runs use the same terrain seed (`42`) and other settings, so gravity is the main difference.
+

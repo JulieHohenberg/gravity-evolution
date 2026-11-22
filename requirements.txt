@@ -1,0 +1,4 @@
+# CARL provides the robot and uses Box2D for the physics.
+carl-bench[box2d]==1.1.1
+# Gym's Box2D environment expects the NumPy 1.x API.
+numpy<2
