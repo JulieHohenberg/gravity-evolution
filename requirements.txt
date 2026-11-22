@@ -4,3 +4,7 @@ carl-bench[box2d]==1.1.1
 numpy<2
 # PPO training and its neural network.
 stable-baselines3==2.4.1
+# API server and its HTTP test client.
+fastapi==0.115.14
+uvicorn==0.34.3
+httpx>=0.27,<0.29
