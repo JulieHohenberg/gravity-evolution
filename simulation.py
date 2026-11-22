@@ -1,8 +1,11 @@
 """Explore the same CARL walking robot under Earth and Moon gravity."""
 
+import argparse
+
 import numpy as np
 import pygame
 from carl.envs.gymnasium.box2d.carl_bipedal_walker import CARLBipedalWalker
+from controller import WEIGHT_COUNT, motor_commands
 
 # Gravity is measured in meters per second squared. Negative means downward.
 GRAVITY = {"Earth": -9.81, "Moon": -1.62}
@@ -16,6 +19,13 @@ def make_environment(planet):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Watch the walking robot.")
+    parser.add_argument("--controller", help="path to trained controller weights")
+    args = parser.parse_args()
+    weights = np.load(args.controller, allow_pickle=False) if args.controller else None
+    if weights is not None and weights.shape != (WEIGHT_COUNT,):
+        parser.error(f"controller must contain {WEIGHT_COUNT} weights")
+
     pygame.init()
     screen = pygame.display.set_mode((600, 540))
     pygame.display.set_caption("Gravity Evolution")
@@ -25,13 +35,10 @@ def main():
     environments = {planet: make_environment(planet) for planet in GRAVITY}
     planet = "Earth"
     environment = environments[planet]
-    environment.reset(seed=SEED)
+    observation, _ = environment.reset(seed=SEED)
     paused = False
     finished = False
     running = True
-
-    # No brain exists yet: zero means none of the four motors is powered.
-    action = np.zeros(4, dtype=np.float32)
 
     while running:
         for event in pygame.event.get():
@@ -41,11 +48,11 @@ def main():
                 if event.key in (pygame.K_1, pygame.K_2):
                     planet = "Earth" if event.key == pygame.K_1 else "Moon"
                     environment = environments[planet]
-                    environment.reset(seed=SEED)
+                    observation, _ = environment.reset(seed=SEED)
                     finished = False
                     paused = False
                 elif event.key == pygame.K_r:
-                    environment.reset(seed=SEED)
+                    observation, _ = environment.reset(seed=SEED)
                     finished = False
                     paused = False
                 elif event.key == pygame.K_SPACE:
@@ -55,7 +62,8 @@ def main():
 
         # One step advances the Box2D physics by 1/50 of a simulated second.
         if not paused and not finished:
-            _, _, terminated, truncated, _ = environment.step(action)
+            action = motor_commands(observation, weights) if weights is not None else np.zeros(4, dtype=np.float32)
+            observation, _, terminated, truncated, _ = environment.step(action)
             finished = terminated or truncated
 
         # CARL returns an image as an array. Pygame displays it in our window.
@@ -76,7 +84,7 @@ def main():
         lines = [
             f"{planet}   |   Gravity: {abs(GRAVITY[planet])} m/s² downward",
             "1: Earth    2: Moon    R: reset    Space: pause",
-            "Motors off — no training yet" + ("   |   Paused" if paused else ""),
+            ("Controller active" if weights is not None else "Motors off") + ("   |   Paused" if paused else ""),
             "Run ended — press R to restart" if finished else "Esc: quit",
         ]
         for index, line in enumerate(lines):
