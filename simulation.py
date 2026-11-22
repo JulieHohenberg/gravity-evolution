@@ -60,6 +60,16 @@ def main():
 
         # CARL returns an image as an array. Pygame displays it in our window.
         image = environment.render()
+        if planet == "Moon":
+            # Replace the sky and ground colors to give the Moon a darker look.
+            for original, replacement in (
+                ((215, 215, 255), (25, 25, 35)),
+                ((255, 255, 255), (25, 25, 35)),
+                ((102, 153, 76), (115, 115, 115)),
+                ((76, 255, 76), (160, 160, 160)),
+                ((76, 204, 76), (140, 140, 140)),
+            ):
+                image[np.all(image == original, axis=2)] = replacement
         picture = pygame.surfarray.make_surface(np.transpose(image, (1, 0, 2)))
         screen.fill((24, 31, 44))
         screen.blit(picture, (0, 0))
